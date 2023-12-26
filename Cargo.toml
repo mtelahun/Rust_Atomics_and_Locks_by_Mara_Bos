@@ -5,6 +5,10 @@ members = [
     "ch01_scoped_thread",
     "ch01_rc_arc",
     "ch02_progress",
+    "ch03_out_of_thin_air_values",
+    "ch03_release_acquire_ordering",
+    "ch03_mutex",
+    "ch04_spinlock",
 ]
 
 [workspace.metadata.release]

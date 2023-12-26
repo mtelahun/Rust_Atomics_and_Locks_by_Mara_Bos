@@ -17,3 +17,19 @@ version = "0.1.0"
 [[package]]
 name = "ch02_progress"
 version = "0.1.0"
+
+[[package]]
+name = "ch03_mutex"
+version = "0.1.0"
+
+[[package]]
+name = "ch03_out_of_thin_air_values"
+version = "0.1.0"
+
+[[package]]
+name = "ch03_release_acquire_ordering"
+version = "0.1.0"
+
+[[package]]
+name = "ch04_spinlock"
+version = "0.1.0"
