@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+    "01_thread",
+    "ch01_scoped_thread",
+    "ch01_rc_arc",
+    "ch02_progress",
+]
+
+[workspace.metadata.release]
+shared-version = true
+tag-name = "v{{version}}"
