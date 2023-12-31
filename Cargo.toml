@@ -9,6 +9,7 @@ members = [
     "ch03_release_acquire_ordering",
     "ch03_mutex",
     "ch04_spinlock",
+    "ch05_simple_channel", "ch05_unsafe_oneshot_channel",
 ]
 
 [workspace.metadata.release]
