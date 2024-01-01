@@ -1,19 +1,19 @@
 use std::thread;
 
-use ch05_unsafe_oneshot_channel::channel::Channel;
+use ch05_unsafe_oneshot_channel::channel::channel;
 
 fn main() {
-    let channel = Channel::new();
+    let (sender, reciever) = channel();
     let t = thread::current();
     thread::scope(|s| {
         s.spawn(|| {
-            channel.send("hello world!");
+            sender.send("hello world!");
             t.unpark()
         });
-        while !channel.is_ready() {
+        while !reciever.is_ready() {
             thread::park();
         }
 
-        assert_eq!(channel.receive(), "hello world!");
+        assert_eq!(reciever.receive(), "hello world!");
     });
 }
