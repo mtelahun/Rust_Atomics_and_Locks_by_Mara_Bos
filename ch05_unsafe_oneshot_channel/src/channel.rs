@@ -1,41 +1,19 @@
 use std::{
     cell::UnsafeCell,
+    marker::PhantomData,
     mem::MaybeUninit,
     sync::atomic::{AtomicBool, Ordering},
+    thread::Thread,
 };
 
 pub struct Sender<'a, T> {
     channel: &'a Channel<T>,
+    receiving_thread: Thread,
 }
 
 pub struct Receiver<'a, T> {
     channel: &'a Channel<T>,
-}
-
-impl<T> Sender<'_, T> {
-    pub fn send(self, message: T) {
-        unsafe { (*self.channel.message.get()).write(message) };
-        self.channel.ready.store(true, Ordering::Release)
-    }
-}
-
-impl<T> Receiver<'_, T> {
-    pub fn is_ready(&self) -> bool {
-        self.channel.ready.load(Ordering::Relaxed)
-    }
-
-    /// Panics if no message is available yet or if the message
-    /// was already consumed.
-    ///
-    /// Tip: use `is_ready` to check first.
-    pub fn receive(self) -> T {
-        if !self.channel.ready.swap(false, Ordering::Acquire) {
-            panic!("no message available!");
-        }
-
-        // Safety: we've just checked (and reset) the ready flag
-        unsafe { (*self.channel.message.get()).assume_init_read() }
-    }
+    _no_send: PhantomData<*const ()>,
 }
 
 #[derive(Debug)]
@@ -45,6 +23,29 @@ pub struct Channel<T> {
 }
 
 unsafe impl<T> Sync for Channel<T> where T: Send {}
+
+impl<T> Sender<'_, T> {
+    pub fn send(self, message: T) {
+        unsafe { (*self.channel.message.get()).write(message) };
+        self.channel.ready.store(true, Ordering::Release);
+        self.receiving_thread.unpark();
+    }
+}
+
+impl<T> Receiver<'_, T> {
+    pub fn is_ready(&self) -> bool {
+        self.channel.ready.load(Ordering::Relaxed)
+    }
+
+    pub fn receive(self) -> T {
+        while !self.channel.ready.swap(false, Ordering::Acquire) {
+            std::thread::park();
+        }
+
+        // Safety: we've just checked (and reset) the ready flag
+        unsafe { (*self.channel.message.get()).assume_init_read() }
+    }
+}
 
 impl<T> Channel<T> {
     pub const fn new() -> Self {
@@ -56,7 +57,16 @@ impl<T> Channel<T> {
 
     pub fn split<'a>(&'a mut self) -> (Sender<'a, T>, Receiver<'a, T>) {
         *self = Self::new();
-        (Sender { channel: self }, Receiver { channel: self })
+        (
+            Sender {
+                channel: self,
+                receiving_thread: std::thread::current(),
+            },
+            Receiver {
+                channel: self,
+                _no_send: PhantomData,
+            },
+        )
     }
 }
 
